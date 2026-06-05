@@ -1,5 +1,11 @@
 # 🤖 AprovaAI — Mentor de Estudos com IA para Concursos de TI
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-8E75B2?style=flat&logo=google&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-local-003B57?style=flat&logo=sqlite&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+
 Agente de inteligência artificial que atua como mentor estratégico para concursos
 públicos da área de Tecnologia da Informação. Ele analisa vagas, identifica a banca
 organizadora e gera cronogramas de estudo personalizados em formato de tabela.
@@ -37,6 +43,24 @@ concurso_agent_ai/
 │   └── main.py              # Ponto de entrada (CLI)
 └── tests/                   # Testes do scraper e do agente
 ```
+
+## 🏗️ Arquitetura
+
+```mermaid
+flowchart TD
+    User([👤 Usuário]) -->|pergunta| CLI[main.py - CLI]
+    CLI --> Agent[AprovaAIAgent]
+    Agent -->|system instruction| Prompts[prompts.py]
+    Agent -->|API| Gemini[(Google Gemini)]
+    Agent -->|busca vagas| Scraper[scraper_tools.py]
+    Scraper -->|web scraping| PCI[PCI Concursos]
+    Scraper -.->|fallback| Mock[Dados de contingência]
+    CLI -->|salva cronograma| DB[(SQLite - planos_estudo)]
+```
+
+**Fluxo:** o usuário interage via CLI → o agente monta o contexto com a *system instruction*
+(personalidade + estratégia por banca) → consulta o Gemini e, quando necessário, a ferramenta
+de scraping de vagas → cronogramas gerados podem ser persistidos no SQLite.
 
 ## 🚀 Como executar
 
