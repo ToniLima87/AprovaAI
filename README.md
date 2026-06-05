@@ -97,6 +97,18 @@ Encontrei oportunidades na área de TI. Para o SERPRO (banca CEBRASPE),
 recomendo o seguinte cronograma estratégico...
 ```
 
+## 🧪 Testes
+
+O projeto inclui testes automatizados com **pytest** (a rede e a API são *mockadas*,
+então não é necessário internet nem chave de API para rodá-los):
+
+```bash
+pytest -v
+```
+
+Cobertura atual: scraper de vagas (parsing, *fallback* de contingência e tratamento
+de erros) e camada de banco de dados SQLite.
+
 ## 📝 Licença
 
 Distribuído sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
