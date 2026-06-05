@@ -1,71 +1,46 @@
 import sys
 import os
+from contextlib import asynccontextmanager
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Garante que a raiz do projeto está no PATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.agents.mentor_agent import aprova_ai
-from src.database.connection import inicializar_banco, obter_conexao
+from src.database.connection import inicializar_banco
+from src.api.routes import router as api_router
 
-def salvar_plano_no_banco(concurso, banca, cronograma):
-    """Salva o histórico do cronograma no banco de dados local."""
-    try:
-        conn = obter_conexao()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO planos_estudo (concurso, banca, cronograma) VALUES (?, ?, ?)",
-            (concurso, banca, cronograma)
-        )
-        conn.commit()
-        conn.close()
-        print("\n💾 [Sistema] Plano de estudos salvo com sucesso no banco de dados!")
-    except Exception as e:
-        print(f"\n❌ Erro ao salvar no banco: {e}")
 
-def rodar_aprova_ai():
-    # 1. Inicializa o banco de dados local
+# Gerencia o ciclo de vida da aplicação (substitui os eventos depreciados de startup/shutdown)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Inicializa o banco de dados antes de subir o servidor
     inicializar_banco()
-    
-    print("="*50)
-    print("        🤖 BEM-VINDO AO APROVAAI AGENT 🤖        ")
-    print("="*50)
-    print("Seu mentor de estudos inteligente para concursos de TI.\n")
-    print("Exemplo de comando: 'Quero ver vagas de concurso para desenvolvedor'")
-    print("Digite 'sair' para encerrar.\n")
-    
-    ultima_resposta_agente = ""
-    
-    while True:
-        try:
-            user_input = input("Você 👤: ")
-            if user_input.lower() in ["sair", "exit", "quit"]:
-                print("\nAté logo, Toni! Bons estudos e rumo à aprovação! 🚀")
-                break
-            
-            if not user_input.strip():
-                continue
-                
-            # Chama o agente para processar
-            print("\nPensando... 🧠")
-            resposta = aprova_ai.responder(user_input)
-            ultima_resposta_agente = resposta
-            
-            print(f"\nAprovaAI 🤖:\n{resposta}\n")
-            print("-" * 50)
-            
-            # Atalho intermediário: se o agente gerou uma tabela markdown, oferece salvamento
-            if "|" in resposta and "Semana" in resposta and "Dia" in resposta:
-                opcao = input("Deseja salvar este plano de estudos gerado? (s/n): ")
-                if opcao.lower() == 's':
-                    # Aqui você pode extrair dinamicamente ou pedir os dados pro usuário
-                    concurso_nome = input("Digite o nome do Concurso (ex: SERPRO): ")
-                    banca_nome = input("Digite a Banca (ex: CEBRASPE): ")
-                    salvar_plano_no_banco(concurso_nome, banca_nome, ultima_resposta_agente)
-                    print("-" * 50)
-                    
-        except KeyboardInterrupt:
-            print("\nEncerrando o AprovaAI...")
-            break
+    print("🎯 Banco de dados SQLite verificado e inicializado.")
+    yield
+
+
+# Inicializa o app FastAPI
+app = FastAPI(
+    title="AprovaAI API",
+    description="Backend escalável para o agente mentor de concursos de TI usando Google GenAI",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Configuração de CORS (Permite que um frontend se conecte à API sem bloqueios de segurança)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Em produção, define os domínios específicos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inclui as rotas que desenvolvemos
+app.include_router(api_router, prefix="/api")
 
 if __name__ == "__main__":
-    rodar_aprova_ai()
+    # Roda o servidor Uvicorn na porta 8000
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
