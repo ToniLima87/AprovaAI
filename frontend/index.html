@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AprovaAI — Mentor de Concursos de TI</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #121a33;
+      --panel: #161f3d;
+      --border: #25315c;
+      --text: #e8ecf8;
+      --text-dim: #9aa6c9;
+      --accent: #6d8bff;
+      --accent-2: #8e75ff;
+      --user-bubble: #2a3a73;
+      --bot-bubble: #161f3d;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 80% -10%, #1b2552 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 22px 6px 16px;
+    }
+
+    .logo {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid; place-items: center;
+      font-size: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    header h1 { font-size: 19px; margin: 0; letter-spacing: .2px; }
+    header p { margin: 2px 0 0; font-size: 13px; color: var(--text-dim); }
+
+    .status {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #3ddc84; box-shadow: 0 0 10px #3ddc84; }
+    .dot.off { background: #ff5c5c; box-shadow: 0 0 10px #ff5c5c; }
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 4px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .chat::-webkit-scrollbar { width: 8px; }
+    .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+    .msg { display: flex; gap: 12px; max-width: 88%; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 17px; flex-shrink: 0;
+    }
+    .avatar.bot { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+    .avatar.user { background: #2a3a73; }
+
+    .bubble {
+      background: var(--bot-bubble);
+      border: 1px solid var(--border);
+      padding: 13px 16px;
+      border-radius: 16px;
+      line-height: 1.55;
+      font-size: 14.5px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+    .msg.user .bubble { background: var(--user-bubble); border-color: #34468a; }
+
+    .bubble p { margin: 0 0 10px; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .bubble table {
+      border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px;
+    }
+    .bubble th, .bubble td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; }
+    .bubble th { background: var(--bg-soft); }
+    .bubble code {
+      background: #0c142e; padding: 2px 6px; border-radius: 6px; font-size: 13px;
+    }
+    .bubble pre { background: #0c142e; padding: 12px; border-radius: 10px; overflow-x: auto; }
+    .bubble ul, .bubble ol { margin: 8px 0; padding-left: 20px; }
+    .bubble a { color: var(--accent); }
+
+    .typing { display: inline-flex; gap: 5px; align-items: center; }
+    .typing span {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim);
+      animation: blink 1.2s infinite both;
+    }
+    .typing span:nth-child(2) { animation-delay: .2s; }
+    .typing span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 4px 12px; }
+    .chip {
+      background: var(--panel); border: 1px solid var(--border); color: var(--text-dim);
+      padding: 8px 13px; border-radius: 999px; font-size: 13px; cursor: pointer;
+      transition: all .15s ease;
+    }
+    .chip:hover { color: var(--text); border-color: var(--accent); transform: translateY(-1px); }
+
+    .composer {
+      display: flex; gap: 10px; padding: 12px 0 20px; align-items: flex-end;
+    }
+    .composer textarea {
+      flex: 1; resize: none; background: var(--panel); color: var(--text);
+      border: 1px solid var(--border); border-radius: 14px; padding: 13px 16px;
+      font-size: 14.5px; font-family: inherit; line-height: 1.4; max-height: 160px;
+      outline: none; transition: border-color .15s;
+    }
+    .composer textarea:focus { border-color: var(--accent); }
+    .send {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none; color: white; width: 48px; height: 48px; border-radius: 14px;
+      cursor: pointer; font-size: 19px; display: grid; place-items: center;
+      transition: transform .12s, opacity .12s; flex-shrink: 0;
+    }
+    .send:hover { transform: translateY(-1px); }
+    .send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">🤖</div>
+      <div>
+        <h1>AprovaAI</h1>
+        <p>Mentor de estudos com IA para concursos de TI</p>
+      </div>
+      <div class="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">conectado</span>
+      </div>
+    </header>
+
+    <div class="chat" id="chat">
+      <div class="msg bot">
+        <div class="avatar bot">🤖</div>
+        <div class="bubble">
+          Olá! Eu sou o <strong>AprovaAI</strong>. Posso buscar vagas de concursos de TI,
+          montar cronogramas de estudo por banca e tirar suas dúvidas estratégicas.
+          Como posso te ajudar hoje?
+        </div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <div class="chip">Quero ver vagas de concurso para desenvolvedor</div>
+      <div class="chip">Monte um cronograma de estudos para a banca CEBRASPE</div>
+      <div class="chip">Como priorizar matérias para concurso de TI?</div>
+    </div>
+
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Escreva sua mensagem..."></textarea>
+      <button class="send" id="send" title="Enviar">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "/api/chat";
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    const suggestions = document.getElementById("suggestions");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    marked.setOptions({ breaks: true, gfm: true });
+
+    function addMessage(role, contentHtml) {
+      const msg = document.createElement("div");
+      msg.className = `msg ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${role}`;
+      avatar.textContent = role === "user" ? "🧑" : "🤖";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.innerHTML = contentHtml;
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+      return bubble;
+    }
+
+    function addTyping() {
+      const bubble = addMessage("bot",
+        '<div class="typing"><span></span><span></span><span></span></div>');
+      return bubble.parentElement;
+    }
+
+    async function sendMessage(text) {
+      if (!text.trim()) return;
+      suggestions.style.display = "none";
+      addMessage("user", escapeHtml(text));
+      input.value = "";
+      input.style.height = "auto";
+      sendBtn.disabled = true;
+
+      const typingEl = addTyping();
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensagem: text }),
+        });
+        typingEl.remove();
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          addMessage("bot", `⚠️ Erro ${res.status}: ${escapeHtml(err.detail || "falha na requisição")}`);
+        } else {
+          const data = await res.json();
+          addMessage("bot", marked.parse(data.resposta || "Sem resposta."));
+        }
+      } catch (e) {
+        typingEl.remove();
+        addMessage("bot", "⚠️ Não consegui falar com o servidor. Ele está rodando?");
+        setStatus(false);
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    function setStatus(online) {
+      statusDot.classList.toggle("off", !online);
+      statusText.textContent = online ? "conectado" : "offline";
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    sendBtn.addEventListener("click", () => sendMessage(input.value));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(input.value);
+      }
+    });
+    input.addEventListener("input", () => {
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 160) + "px";
+    });
+    suggestions.addEventListener("click", (e) => {
+      if (e.target.classList.contains("chip")) sendMessage(e.target.textContent);
+    });
+
+    input.focus();
+  </script>
+</body>
+</html>
