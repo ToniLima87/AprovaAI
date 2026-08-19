@@ -21,5 +21,16 @@ def inicializar_banco():
             criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Tabela para salvar os simulados (questões + gabarito comentado) gerados
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS simulados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            concurso TEXT NOT NULL,
+            banca TEXT NOT NULL,
+            conteudo TEXT NOT NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()

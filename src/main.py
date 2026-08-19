@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 
 # Garante que a raiz do projeto está no PATH
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,17 +41,16 @@ app.add_middleware(
 # Inclui as rotas que desenvolvemos
 app.include_router(api_router, prefix="/api")
 
-# Serve a interface de chat (frontend) na raiz
-FRONTEND_INDEX = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "frontend",
-    "index.html",
-)
-
 
 @app.get("/", include_in_schema=False)
-async def servir_frontend():
-    return FileResponse(FRONTEND_INDEX)
+async def raiz():
+    # O frontend agora é o app React (Vite), servido separadamente.
+    return {
+        "app": "AprovaAI API",
+        "status": "online",
+        "frontend": "http://localhost:5173",
+        "docs": "/docs",
+    }
 
 
 if __name__ == "__main__":
